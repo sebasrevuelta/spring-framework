@@ -485,6 +485,78 @@ public interface RestOperations {
 	 */
 	Set<HttpMethod> optionsForAllow(URI url) throws RestClientException;
 
+	// QUERY
+
+	/**
+	 * Retrieve a representation by doing a QUERY on the specified URL.
+	 * The response (if any) is converted and returned.
+	 * <p>URI Template variables are expanded using the given URI variables, if any.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @param uriVariables the variables to expand the template
+	 * @return the converted object
+	 */
+	@Nullable
+	<T> T queryForObject(String url, @Nullable Object request, Class<T> responseType, Object... uriVariables) throws RestClientException;
+
+	/**
+	 * Retrieve a representation by doing a QUERY on the URI template.
+	 * The response (if any) is converted and returned.
+	 * <p>URI Template variables are expanded using the given map.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @param uriVariables the map containing variables for the URI template
+	 * @return the converted object
+	 */
+	@Nullable
+	<T> T queryForObject(String url, @Nullable Object request, Class<T> responseType, Map<String, ?> uriVariables) throws RestClientException;
+
+	/**
+	 * Retrieve a representation by doing a QUERY on the URL.
+	 * The response (if any) is converted and returned.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @return the converted object
+	 */
+	@Nullable
+	<T> T queryForObject(URI url, @Nullable Object request, Class<T> responseType) throws RestClientException;
+
+	/**
+	 * Retrieve an entity by doing a QUERY on the specified URL.
+	 * The response is converted and stored in a {@link ResponseEntity}.
+	 * <p>URI Template variables are expanded using the given URI variables, if any.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @param uriVariables the variables to expand the template
+	 * @return the entity
+	 * @since 6.2
+	 */
+	<T> ResponseEntity<T> queryForEntity(String url, @Nullable Object request, Class<T> responseType, Object... uriVariables)
+			throws RestClientException;
+
+	/**
+	 * Retrieve a representation by doing a QUERY on the URI template.
+	 * The response is converted and stored in a {@link ResponseEntity}.
+	 * <p>URI Template variables are expanded using the given map.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @param uriVariables the map containing variables for the URI template
+	 * @return the converted object
+	 * @since 6.2
+	 */
+	<T> ResponseEntity<T> queryForEntity(String url, @Nullable Object request, Class<T> responseType, Map<String, ?> uriVariables)
+			throws RestClientException;
+
+	/**
+	 * Retrieve a representation by doing a GET on the URL.
+	 * The response is converted and stored in a {@link ResponseEntity}.
+	 * @param url the URL
+	 * @param responseType the type of the return value
+	 * @return the converted object
+	 * @since 6.2
+	 */
+	<T> ResponseEntity<T> queryForEntity(URI url, @Nullable Object request, Class<T> responseType) throws RestClientException;
+
 
 	// exchange
 

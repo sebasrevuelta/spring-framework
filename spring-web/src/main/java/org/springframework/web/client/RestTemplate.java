@@ -374,6 +374,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 
 	/**
 	 * Return the configured {@link ObservationRegistry}.
+	 *
 	 * @since 6.1
 	 */
 	public ObservationRegistry getObservationRegistry() {
@@ -670,6 +671,67 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 		return (headers != null ? headers.getAllow() : Collections.emptySet());
 	}
 
+	// QUERY
+
+	@Override
+	@Nullable
+	public <T> T queryForObject(String url, @Nullable Object request, Class<T> responseType,
+			Object... uriVariables) throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		HttpMessageConverterExtractor<T> responseExtractor =
+				new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
+		return execute(url, HttpMethod.QUERY, requestCallback, responseExtractor, uriVariables);
+	}
+
+	@Override
+	@Nullable
+	public <T> T queryForObject(String url, @Nullable Object request, Class<T> responseType,
+			Map<String, ?> uriVariables) throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		HttpMessageConverterExtractor<T> responseExtractor =
+				new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
+		return execute(url, HttpMethod.QUERY, requestCallback, responseExtractor, uriVariables);
+	}
+
+	@Override
+	@Nullable
+	public <T> T queryForObject(URI url, @Nullable Object request, Class<T> responseType)
+			throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		HttpMessageConverterExtractor<T> responseExtractor =
+				new HttpMessageConverterExtractor<>(responseType, getMessageConverters());
+		return execute(url, HttpMethod.QUERY, requestCallback, responseExtractor);
+	}
+
+	@Override
+	public <T> ResponseEntity<T> queryForEntity(String url, @Nullable Object request,
+			Class<T> responseType, Object... uriVariables) throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		ResponseExtractor<ResponseEntity<T>> responseExtractor = responseEntityExtractor(responseType);
+		return nonNull(execute(url, HttpMethod.QUERY, requestCallback, responseExtractor, uriVariables));
+	}
+
+	@Override
+	public <T> ResponseEntity<T> queryForEntity(String url, @Nullable Object request,
+			Class<T> responseType, Map<String, ?> uriVariables) throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		ResponseExtractor<ResponseEntity<T>> responseExtractor = responseEntityExtractor(responseType);
+		return nonNull(execute(url, HttpMethod.QUERY, requestCallback, responseExtractor, uriVariables));
+	}
+
+	@Override
+	public <T> ResponseEntity<T> queryForEntity(URI url, @Nullable Object request, Class<T> responseType)
+			throws RestClientException {
+
+		RequestCallback requestCallback = httpEntityCallback(request, responseType);
+		ResponseExtractor<ResponseEntity<T>> responseExtractor = responseEntityExtractor(responseType);
+		return nonNull(execute(url, HttpMethod.QUERY, requestCallback, responseExtractor));
+	}
 
 	// exchange
 

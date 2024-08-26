@@ -51,8 +51,8 @@ import org.springframework.core.annotation.AliasFor;
  * at the method level. In most cases, at the method level applications will
  * prefer to use one of the HTTP method specific variants
  * {@link GetMapping @GetMapping}, {@link PostMapping @PostMapping},
- * {@link PutMapping @PutMapping}, {@link DeleteMapping @DeleteMapping}, or
- * {@link PatchMapping @PatchMapping}.
+ * {@link PutMapping @PutMapping}, {@link DeleteMapping @DeleteMapping},
+ * {@link PatchMapping @PatchMapping}, or {@link QueryMapping}.
  *
  * <p><strong>NOTE:</strong> This annotation cannot be used in conjunction with
  * other {@code @RequestMapping} annotations that are declared on the same element
