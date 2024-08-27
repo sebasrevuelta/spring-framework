@@ -43,6 +43,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
@@ -475,22 +476,6 @@ class RestTemplateTests {
 	}
 
 	@Test
-	void queryForObject() throws Exception {
-		mockTextPlainHttpMessageConverter();
-		HttpHeaders requestHeaders = new HttpHeaders();
-		mockSentRequest(QUERY, "https://example.com", requestHeaders);
-		mockResponseStatus(HttpStatus.OK);
-		String expected = "42";
-		mockResponseBody(expected, MediaType.TEXT_PLAIN);
-
-		String result = template.queryForObject("https://example.com", "Hello World", String.class);
-		assertThat(result).as("Invalid QUERY result").isEqualTo(expected);
-		assertThat(requestHeaders.getFirst("Accept")).as("Invalid Accept header").isEqualTo(MediaType.TEXT_PLAIN_VALUE);
-
-		verify(response).close();
-	}
-
-	@Test
 	void queryForEntity() throws Exception {
 		mockTextPlainHttpMessageConverter();
 		HttpHeaders requestHeaders = new HttpHeaders();
@@ -499,31 +484,11 @@ class RestTemplateTests {
 		String expected = "42";
 		mockResponseBody(expected, MediaType.TEXT_PLAIN);
 
-		ResponseEntity<String> result = template.queryForEntity("https://example.com", "Hello World", String.class);
+		ResponseEntity<String> result = template.exchange(RequestEntity.query("https://example.com").body("Hello World"), String.class);
 		assertThat(result.getBody()).as("Invalid QUERY result").isEqualTo(expected);
 		assertThat(result.getHeaders().getContentType()).as("Invalid Content-Type").isEqualTo(MediaType.TEXT_PLAIN);
 		assertThat(requestHeaders.getFirst("Accept")).as("Invalid Accept header").isEqualTo(MediaType.TEXT_PLAIN_VALUE);
 		assertThat(result.getStatusCode()).as("Invalid status code").isEqualTo(HttpStatus.OK);
-
-		verify(response).close();
-	}
-
-	@Test
-	void queryForObjectNull() throws Exception {
-		mockTextPlainHttpMessageConverter();
-		HttpHeaders requestHeaders = new HttpHeaders();
-		mockSentRequest(QUERY, "https://example.com", requestHeaders);
-		mockResponseStatus(HttpStatus.OK);
-		HttpHeaders responseHeaders = new HttpHeaders();
-		responseHeaders.setContentType(MediaType.TEXT_PLAIN);
-		responseHeaders.setContentLength(10);
-		given(response.getHeaders()).willReturn(responseHeaders);
-		given(response.getBody()).willReturn(InputStream.nullInputStream());
-		given(converter.read(String.class, response)).willReturn(null);
-
-		String result = template.queryForObject("https://example.com", null, String.class);
-		assertThat(result).as("Invalid QUERY result").isNull();
-		assertThat(requestHeaders.getContentLength()).as("Invalid content length").isEqualTo(0);
 
 		verify(response).close();
 	}
@@ -541,7 +506,7 @@ class RestTemplateTests {
 		given(response.getBody()).willReturn(InputStream.nullInputStream());
 		given(converter.read(String.class, response)).willReturn(null);
 
-		ResponseEntity<String> result = template.queryForEntity("https://example.com", null, String.class);
+		ResponseEntity<String> result = template.exchange("https://example.com",QUERY, null, String.class);
 		assertThat(result.hasBody()).as("Invalid QUERY result").isFalse();
 		assertThat(result.getHeaders().getContentType()).as("Invalid Content-Type").isEqualTo(MediaType.TEXT_PLAIN);
 		assertThat(requestHeaders.getContentLength()).as("Invalid content length").isEqualTo(0);
