@@ -576,7 +576,7 @@ public class HttpHeaders implements MultiValueMap<String, String>, Serializable 
 
 	/**
 	 * Set the list of acceptable {@linkplain MediaType media types} for
-	 * {@code QUERY} methods, as specified by the {@code Accept-QUERY} header.
+	 * {@code QUERY} methods, as specified by the {@code Accept-Query} header.
 	 * @since x.x.x
 	 */
 	public void setAcceptQuery(List<MediaType> mediaTypes) {
