@@ -84,7 +84,7 @@ public final class HttpMethod implements Comparable<HttpMethod>, Serializable {
 
 	/**
 	 * The HTTP method {@code QUERY}.
-	 * @see <a href="https://httpwg.org/http-extensions/draft-ietf-httpbis-safe-method-w-body.html">IETF Draft</a>
+	 * @see <a href="https://datatracker.ietf.org/doc/draft-ietf-httpbis-safe-method-w-body/">IETF Draft</a>
 	 */
 	public static final HttpMethod QUERY = new HttpMethod("QUERY");
 

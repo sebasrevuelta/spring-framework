@@ -39,7 +39,7 @@ import org.springframework.core.annotation.AliasFor;
  * such as {@code @GetMapping}, {@code @PutMapping}, etc.
  *
  * @author Mario Ruiz
- * @since 6.2
+ * @since x.x.x
  * @see GetMapping
  * @see PutMapping
  * @see PostMapping

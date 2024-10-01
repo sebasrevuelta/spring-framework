@@ -700,7 +700,7 @@ public abstract class RouterFunctions {
 		 * Adds a route to the given handler function that handles HTTP {@code QUERY} requests.
 		 * @param handlerFunction the handler function to handle all {@code QUERY} requests
 		 * @return this builder
-		 * @since 6.2
+		 * @since x.x.x
 		 */
 		Builder QUERY(HandlerFunction<ServerResponse> handlerFunction);
 
@@ -722,7 +722,7 @@ public abstract class RouterFunctions {
 		 * @param handlerFunction the handler function to handle all {@code QUERY} requests that
 		 * match {@code predicate}
 		 * @return this builder
-		 * @since 6.2
+		 * @since x.x.x
 		 * @see RequestPredicates
 		 */
 		Builder QUERY(RequestPredicate predicate, HandlerFunction<ServerResponse> handlerFunction);

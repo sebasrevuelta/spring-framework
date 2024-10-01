@@ -349,7 +349,7 @@ public class RequestEntity<T> extends HttpEntity<T> {
 	 * @param uriTemplate the uri template to use
 	 * @param uriVariables variables to expand the URI template with
 	 * @return the created builder
-	 * @since 6.2
+	 * @since x.x.x
 	 */
 	public static BodyBuilder query(String uriTemplate, Object... uriVariables) {
 		return method(HttpMethod.QUERY, uriTemplate, uriVariables);
