@@ -40,7 +40,7 @@ import static org.mockito.BDDMockito.when;
  */
 @SpringJUnitConfig
 @TestMethodOrder(OrderAnnotation.class)
-class MockitoBeanForBeanFactoryIntegrationTests {
+public class MockitoBeanForBeanFactoryIntegrationTests {
 
 	@MockitoBean
 	private TestBean testBean;
@@ -90,18 +90,11 @@ class MockitoBeanForBeanFactoryIntegrationTests {
 		public Class<?> getObjectType() {
 			return TestBean.class;
 		}
-
-		@Override
-		public boolean isSingleton() {
-			return false;
-		}
-
 	}
 
-	interface TestBean {
+	public interface TestBean {
 
 		String hello();
-
 	}
 
 }

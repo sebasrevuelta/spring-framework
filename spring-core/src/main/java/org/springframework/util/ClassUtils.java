@@ -135,10 +135,17 @@ public abstract class ClassUtils {
 	private static final Set<Class<?>> javaLanguageInterfaces;
 
 	/**
-	 * Cache for equivalent methods on a public interface implemented by the declaring class.
-	 * <p>A {@code null} value signals that no public interface method was found for the key.
+	 * Cache for equivalent methods on a interface implemented by the declaring class.
+	 * <p>A {@code null} value signals that no interface method was found for the key.
 	 */
 	private static final Map<Method, Method> interfaceMethodCache = new ConcurrentReferenceHashMap<>(256);
+
+	/**
+	 * Cache for equivalent methods on a public interface implemented by the declaring class.
+	 * <p>A {@code null} value signals that no public interface method was found for the key.
+	 * @since 6.2
+	 */
+	private static final Map<Method, Method> publicInterfaceMethodCache = new ConcurrentReferenceHashMap<>(256);
 
 	/**
 	 * Cache for equivalent public methods in a public declaring type within the type hierarchy
@@ -260,9 +267,9 @@ public abstract class ClassUtils {
 
 	/**
 	 * Replacement for {@code Class.forName()} that also returns Class instances
-	 * for primitives (e.g. "int") and array class names (e.g. "String[]").
+	 * for primitives (for example, "int") and array class names (for example, "String[]").
 	 * Furthermore, it is also capable of resolving nested class names in Java source
-	 * style (e.g. "java.lang.Thread.State" instead of "java.lang.Thread$State").
+	 * style (for example, "java.lang.Thread.State" instead of "java.lang.Thread$State").
 	 * @param name the name of the Class
 	 * @param classLoader the class loader to use
 	 * (can be {@code null}, which indicates the default class loader)
@@ -1094,7 +1101,7 @@ public abstract class ClassUtils {
 
 	/**
 	 * Determine the name of the class file, relative to the containing
-	 * package: e.g. "String.class"
+	 * package: for example, "String.class".
 	 * @param clazz the class
 	 * @return the file name of the ".class" file
 	 */
@@ -1107,7 +1114,7 @@ public abstract class ClassUtils {
 
 	/**
 	 * Determine the name of the package of the given class,
-	 * e.g. "java.lang" for the {@code java.lang.String} class.
+	 * for example, "java.lang" for the {@code java.lang.String} class.
 	 * @param clazz the class
 	 * @return the package name, or the empty String if the class
 	 * is defined in the default package
@@ -1119,7 +1126,7 @@ public abstract class ClassUtils {
 
 	/**
 	 * Determine the name of the package of the given fully-qualified class name,
-	 * e.g. "java.lang" for the {@code java.lang.String} class name.
+	 * for example, "java.lang" for the {@code java.lang.String} class name.
 	 * @param fqClassName the fully-qualified class name
 	 * @return the package name, or the empty String if the class
 	 * is defined in the default package
@@ -1403,7 +1410,8 @@ public abstract class ClassUtils {
 	 * @param method the method to be invoked, potentially from an implementation class
 	 * @return the corresponding interface method, or the original method if none found
 	 * @since 5.1
-	 * @deprecated in favor of {@link #getPubliclyAccessibleMethodIfPossible(Method, Class)}
+	 * @see #getPubliclyAccessibleMethodIfPossible(Method, Class)
+	 * @deprecated in favor of {@link #getInterfaceMethodIfPossible(Method, Class)}
 	 */
 	@Deprecated
 	public static Method getInterfaceMethodIfPossible(Method method) {
@@ -1421,38 +1429,45 @@ public abstract class ClassUtils {
 	 * @since 5.3.16
 	 * @see #getPubliclyAccessibleMethodIfPossible(Method, Class)
 	 * @see #getMostSpecificMethod
-	 * @deprecated in favor of {@link #getPubliclyAccessibleMethodIfPossible(Method, Class)}
 	 */
-	@Deprecated(since = "6.2")
 	public static Method getInterfaceMethodIfPossible(Method method, @Nullable Class<?> targetClass) {
+		return getInterfaceMethodIfPossible(method, targetClass, false);
+	}
+
+	private static Method getInterfaceMethodIfPossible(Method method, @Nullable Class<?> targetClass,
+			boolean requirePublicInterface) {
+
 		Class<?> declaringClass = method.getDeclaringClass();
-		if (!Modifier.isPublic(method.getModifiers()) || declaringClass.isInterface()) {
+		if (!Modifier.isPublic(method.getModifiers()) || (declaringClass.isInterface() &&
+				(!requirePublicInterface || Modifier.isPublic(declaringClass.getModifiers())))) {
 			return method;
 		}
 		String methodName = method.getName();
 		Class<?>[] parameterTypes = method.getParameterTypes();
 
+		Map<Method, Method> methodCache = (requirePublicInterface ? publicInterfaceMethodCache : interfaceMethodCache);
 		// Try cached version of method in its declaring class
-		Method result = interfaceMethodCache.computeIfAbsent(method,
-				key -> findInterfaceMethodIfPossible(methodName, parameterTypes, declaringClass, Object.class));
+		Method result = methodCache.computeIfAbsent(method, key -> findInterfaceMethodIfPossible(
+				methodName, parameterTypes, declaringClass, Object.class, requirePublicInterface));
 		if (result == null && targetClass != null) {
 			// No interface method found yet -> try given target class (possibly a subclass of the
 			// declaring class, late-binding a base class method to a subclass-declared interface:
-			// see e.g. HashMap.HashIterator.hasNext)
-			result = findInterfaceMethodIfPossible(methodName, parameterTypes, targetClass, declaringClass);
+			// see, for example, HashMap.HashIterator.hasNext)
+			result = findInterfaceMethodIfPossible(
+					methodName, parameterTypes, targetClass, declaringClass, requirePublicInterface);
 		}
 		return (result != null ? result : method);
 	}
 
 	@Nullable
 	private static Method findInterfaceMethodIfPossible(String methodName, Class<?>[] parameterTypes,
-			Class<?> startClass, Class<?> endClass) {
+			Class<?> startClass, Class<?> endClass, boolean requirePublicInterface) {
 
 		Class<?> current = startClass;
 		while (current != null && current != endClass) {
 			for (Class<?> ifc : current.getInterfaces()) {
 				try {
-					if (Modifier.isPublic(ifc.getModifiers())) {
+					if (!requirePublicInterface || Modifier.isPublic(ifc.getModifiers())) {
 						return ifc.getMethod(methodName, parameterTypes);
 					}
 				}
@@ -1500,7 +1515,7 @@ public abstract class ClassUtils {
 			return method;
 		}
 
-		Method interfaceMethod = getInterfaceMethodIfPossible(method, targetClass);
+		Method interfaceMethod = getInterfaceMethodIfPossible(method, targetClass, true);
 		// If we found a method in a public interface, return the interface method.
 		if (!interfaceMethod.equals(method)) {
 			return interfaceMethod;

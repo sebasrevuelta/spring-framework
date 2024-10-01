@@ -19,33 +19,33 @@ package org.springframework.test.context.bean.override.mockito;
 import java.lang.reflect.Field;
 import java.util.Objects;
 
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.SingletonBeanRegistry;
 import org.springframework.core.ResolvableType;
+import org.springframework.core.style.ToStringCreator;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
-import org.springframework.util.ObjectUtils;
 
 /**
- * Base {@link OverrideMetadata} implementation for Mockito.
+ * Abstract base {@link OverrideMetadata} implementation for Mockito.
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
+ * @author Sam Brannen
  * @since 6.2
  */
-abstract class MockitoOverrideMetadata extends OverrideMetadata {
+abstract class AbstractMockitoOverrideMetadata extends OverrideMetadata {
 
 	private final MockReset reset;
 
 	private final boolean proxyTargetAware;
 
 
-	protected MockitoOverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
+	protected AbstractMockitoOverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
 			BeanOverrideStrategy strategy, @Nullable MockReset reset, boolean proxyTargetAware) {
 
 		super(field, beanType, beanName, strategy);
-		this.reset = (reset != null) ? reset : MockReset.AFTER;
+		this.reset = (reset != null ? reset : MockReset.AFTER);
 		this.proxyTargetAware = proxyTargetAware;
 	}
 
@@ -68,18 +68,20 @@ abstract class MockitoOverrideMetadata extends OverrideMetadata {
 
 	@Override
 	protected void track(Object mock, SingletonBeanRegistry trackingBeanRegistry) {
-		MockitoBeans tracker = null;
-		try {
-			tracker = (MockitoBeans) trackingBeanRegistry.getSingleton(MockitoBeans.class.getName());
-		}
-		catch (NoSuchBeanDefinitionException ignored) {
+		getMockitoBeans(trackingBeanRegistry).add(mock);
+	}
 
+	private static MockitoBeans getMockitoBeans(SingletonBeanRegistry trackingBeanRegistry) {
+		String beanName = MockitoBeans.class.getName();
+		MockitoBeans mockitoBeans = null;
+		if (trackingBeanRegistry.containsSingleton(beanName)) {
+			mockitoBeans = (MockitoBeans) trackingBeanRegistry.getSingleton(beanName);
 		}
-		if (tracker == null) {
-			tracker= new MockitoBeans();
-			trackingBeanRegistry.registerSingleton(MockitoBeans.class.getName(), tracker);
+		if (mockitoBeans == null) {
+			mockitoBeans = new MockitoBeans();
+			trackingBeanRegistry.registerSingleton(beanName, mockitoBeans);
 		}
-		tracker.add(mock);
+		return mockitoBeans;
 	}
 
 	@Override
@@ -87,19 +89,25 @@ abstract class MockitoOverrideMetadata extends OverrideMetadata {
 		if (other == this) {
 			return true;
 		}
-		if (other == null || !getClass().isAssignableFrom(other.getClass())) {
-			return false;
-		}
-		MockitoOverrideMetadata that = (MockitoOverrideMetadata) other;
-		boolean result = super.equals(that);
-		result = result && ObjectUtils.nullSafeEquals(this.reset, that.reset);
-		result = result && ObjectUtils.nullSafeEquals(this.proxyTargetAware, that.proxyTargetAware);
-		return result;
+		return (other instanceof AbstractMockitoOverrideMetadata that && super.equals(that) &&
+				(this.reset == that.reset) && (this.proxyTargetAware == that.proxyTargetAware));
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.reset, this.proxyTargetAware) + super.hashCode();
+		return super.hashCode() + Objects.hash(this.reset, this.proxyTargetAware);
+	}
+
+	@Override
+	public String toString() {
+		return new ToStringCreator(this)
+				.append("field", getField())
+				.append("beanType", getBeanType())
+				.append("beanName", getBeanName())
+				.append("strategy", getStrategy())
+				.append("reset", getReset())
+				.append("proxyTargetAware", isProxyTargetAware())
+				.toString();
 	}
 
 }

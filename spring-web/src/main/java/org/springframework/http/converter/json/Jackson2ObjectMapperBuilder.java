@@ -88,7 +88,7 @@ import org.springframework.util.xml.StaxUtils;
  * support for Java 8 Date &amp; Time API types</li>
  * <li><a href="https://github.com/FasterXML/jackson-module-kotlin">jackson-module-kotlin</a>:
  * support for Kotlin classes and data classes</li>
- * <li><a href="https://github.com/FasterXML/jackson-modules-java8/tree/2.17/parameter-names">jackson-modules-java8/parameter-names</a>:
+ * <li><a href="https://github.com/FasterXML/jackson-modules-java8/tree/2.18/parameter-names">jackson-modules-java8/parameter-names</a>:
  * support for accessing parameter names</li>
  * </ul>
  *
@@ -267,7 +267,7 @@ public class Jackson2ObjectMapperBuilder {
 	/**
 	 * Alternative to {@link #annotationIntrospector(AnnotationIntrospector)}
 	 * that allows combining with rather than replacing the currently set
-	 * introspector, e.g. via
+	 * introspector, for example, via
 	 * {@link AnnotationIntrospectorPair#pair(AnnotationIntrospector, AnnotationIntrospector)}.
 	 * @param pairingFunction a function to apply to the currently set
 	 * introspector (possibly {@code null}); the result of the function becomes

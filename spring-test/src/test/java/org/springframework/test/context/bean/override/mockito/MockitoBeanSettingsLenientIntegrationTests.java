@@ -19,10 +19,15 @@ package org.springframework.test.context.bean.override.mockito;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.mockito.quality.Strictness;
 
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.BDDMockito.when;
+import static org.mockito.Mockito.mock;
 
 /**
  * Integration tests for explicitly-defined {@link MockitoBeanSettings} with
@@ -31,15 +36,21 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  * @author Simon Baslé
  * @since 6.2
  */
-@SpringJUnitConfig(MockitoBeanForByNameLookupIntegrationTests.Config.class)
+@SpringJUnitConfig
+@DirtiesContext
 @MockitoBeanSettings(Strictness.LENIENT)
 class MockitoBeanSettingsLenientIntegrationTests {
 
 	@Test
 	@SuppressWarnings("rawtypes")
 	void unusedStubbingNotReported() {
-		List list = Mockito.mock(List.class);
-		Mockito.when(list.get(Mockito.anyInt())).thenReturn(new Object());
+		List list = mock();
+		when(list.get(anyInt())).thenReturn(new Object());
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class Config {
+		// no beans
 	}
 
 }

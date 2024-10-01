@@ -27,15 +27,12 @@ import org.mockito.listeners.VerificationStartedListener;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
-import org.springframework.core.style.ToStringCreator;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * {@link OverrideMetadata} implementation for Mockito {@code spy} support.
@@ -45,7 +42,7 @@ import static org.mockito.Mockito.mock;
  * @author Stephane Nicoll
  * @since 6.2
  */
-class MockitoSpyBeanOverrideMetadata extends MockitoOverrideMetadata {
+class MockitoSpyBeanOverrideMetadata extends AbstractMockitoOverrideMetadata {
 
 	MockitoSpyBeanOverrideMetadata(Field field, ResolvableType typeToSpy, MockitoSpyBean spyAnnotation) {
 		this(field, typeToSpy, (StringUtils.hasText(spyAnnotation.name()) ? spyAnnotation.name() : null),
@@ -65,18 +62,17 @@ class MockitoSpyBeanOverrideMetadata extends MockitoOverrideMetadata {
 			@Nullable Object existingBeanInstance) {
 
 		Assert.notNull(existingBeanInstance,
-				() -> "MockitoSpyBean requires an existing bean instance for bean " + beanName);
+				() -> "@MockitoSpyBean requires an existing bean instance for bean " + beanName);
 		return createSpy(beanName, existingBeanInstance);
 	}
 
 	@SuppressWarnings("unchecked")
-	<T> T createSpy(String name, Object instance) {
-		Assert.notNull(instance, "Instance must not be null");
+	private Object createSpy(String name, Object instance) {
 		Class<?> resolvedTypeToOverride = getBeanType().resolve();
 		Assert.notNull(resolvedTypeToOverride, "Failed to resolve type to override");
 		Assert.isInstanceOf(resolvedTypeToOverride, instance);
 		if (Mockito.mockingDetails(instance).isSpy()) {
-			return (T) instance;
+			return instance;
 		}
 		MockSettings settings = MockReset.withSettings(getReset());
 		if (StringUtils.hasLength(name)) {
@@ -95,16 +91,7 @@ class MockitoSpyBeanOverrideMetadata extends MockitoOverrideMetadata {
 			settings.spiedInstance(instance);
 			toSpy = instance.getClass();
 		}
-		return (T) mock(toSpy, settings);
-	}
-
-	@Override
-	public String toString() {
-		return new ToStringCreator(this)
-				.append("beanName", getBeanName())
-				.append("beanType", getBeanType())
-				.append("reset", getReset())
-				.toString();
+		return Mockito.mock(toSpy, settings);
 	}
 
 

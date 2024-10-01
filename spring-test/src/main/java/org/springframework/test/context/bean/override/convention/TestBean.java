@@ -26,7 +26,10 @@ import org.springframework.core.annotation.AliasFor;
 import org.springframework.test.context.bean.override.BeanOverride;
 
 /**
- * Mark a field to override a bean definition in the {@code BeanFactory}.
+ * {@code @TestBean} is an annotation that can be applied to a field in a test
+ * class to override a bean in the test's
+ * {@link org.springframework.context.ApplicationContext ApplicationContext}
+ * using a static factory method.
  *
  * <p>By default, the bean to override is inferred from the type of the
  * annotated field. This requires that exactly one matching bean definition is
@@ -34,7 +37,10 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * used to help disambiguate. In the absence of a {@code @Qualifier} annotation,
  * the name of the annotated field will be used as a qualifier. Alternatively,
  * you can explicitly specify a bean name to replace by setting the
- * {@link #value()} or {@link #name()} attribute.
+ * {@link #value() value} or {@link #name() name} attribute. If you would like
+ * for a new bean definition to be created when a corresponding bean definition
+ * does not exist, set the {@link #enforceOverride() enforceOverride} attribute
+ * to {@code false}.
  *
  * <p>The instance is created from a zero-argument static factory method in the
  * test class whose return type is compatible with the annotated field. In the
@@ -57,13 +63,12 @@ import org.springframework.test.context.bean.override.BeanOverride;
  *
  * <p>Consider the following example.
  *
- * <pre><code>
- * class CustomerServiceTests {
+ * <pre><code> class CustomerServiceTests {
  *
  *     &#064;TestBean
  *     private CustomerRepository repository;
  *
- *     // Tests
+ *     // &#064;Test methods ...
  *
  *     private static CustomerRepository repository() {
  *         return new TestCustomerRepository();
@@ -79,24 +84,27 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * <p>To make things more explicit, the bean and method names can be set,
  * as shown in the following example.
  *
- * <pre><code>
- * class CustomerServiceTests {
+ * <pre><code> class CustomerServiceTests {
  *
  *     &#064;TestBean(name = "customerRepository", methodName = "createTestCustomerRepository")
- *     private CustomerRepository repository;
+ *     CustomerRepository repository;
  *
- *     // Tests
+ *     // &#064;Test methods ...
  *
- *     private static CustomerRepository createTestCustomerRepository() {
+ *     static CustomerRepository createTestCustomerRepository() {
  *         return new TestCustomerRepository();
  *     }
  * }</code></pre>
+ *
+ * <p><strong>NOTE</strong>: Only <em>singleton</em> beans can be overridden.
+ * Any attempt to override a non-singleton bean will result in an exception.
  *
  * @author Simon Baslé
  * @author Stephane Nicoll
  * @author Sam Brannen
  * @since 6.2
- * @see TestBeanOverrideProcessor
+ * @see org.springframework.test.context.bean.override.mockito.MockitoBean @MockitoBean
+ * @see org.springframework.test.context.bean.override.mockito.MockitoSpyBean @MockitoSpyBean
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -137,5 +145,17 @@ public @interface TestBean {
 	 * based either on the name of the annotated field or the name of the bean.
 	 */
 	String methodName() default "";
+
+	/**
+	 * Whether to require the existence of a bean definition for the bean being
+	 * overridden.
+	 * <p>Defaults to {@code true} which means that an exception will be thrown
+	 * if a corresponding bean definition does not exist.
+	 * <p>Set to {@code false} to create a new bean definition when a corresponding
+	 * bean definition does not exist.
+	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE_DEFINITION
+	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE_OR_CREATE_DEFINITION
+	 */
+	boolean enforceOverride() default true;
 
 }

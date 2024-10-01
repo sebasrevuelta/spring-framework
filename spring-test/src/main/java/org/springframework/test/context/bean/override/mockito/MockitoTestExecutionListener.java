@@ -17,9 +17,10 @@
 package org.springframework.test.context.bean.override.mockito;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.lang.reflect.AnnotatedElement;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import org.mockito.Mockito;
 import org.mockito.MockitoSession;
@@ -31,7 +32,6 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.util.ReflectionUtils.FieldCallback;
 
 /**
  * {@code TestExecutionListener} that enables {@link MockitoBean @MockitoBean}
@@ -41,7 +41,7 @@ import org.springframework.util.ReflectionUtils.FieldCallback;
  *
  * <p>The {@link MockitoSession#setStrictness(Strictness) strictness} of the
  * session defaults to {@link Strictness#STRICT_STUBS}. Use
- * {@link MockitoBeanSettings} to specify a different strictness.
+ * {@link MockitoBeanSettings @MockitoBeanSettings} to specify a different strictness.
  *
  * <p>The automatic reset support for {@code @MockBean} and {@code @SpyBean} is
  * handled by the {@link MockitoResetTestExecutionListener}.
@@ -50,8 +50,11 @@ import org.springframework.util.ReflectionUtils.FieldCallback;
  * @author Phillip Webb
  * @author Andy Wilkinson
  * @author Moritz Halbritter
+ * @author Sam Brannen
  * @since 6.2
  * @see MockitoResetTestExecutionListener
+ * @see MockitoBean @MockitoBean
+ * @see MockitoSpyBean @MockitoSpyBean
  */
 public class MockitoTestExecutionListener extends AbstractTestExecutionListener {
 
@@ -101,12 +104,12 @@ public class MockitoTestExecutionListener extends AbstractTestExecutionListener 
 	}
 
 	private void initMocks(TestContext testContext) {
-		if (hasMockitoAnnotations(testContext)) {
+		Class<?> testClass = testContext.getTestClass();
+		if (MockitoAnnotationDetector.hasMockitoAnnotations(testClass)) {
 			Object testInstance = testContext.getTestInstance();
-			MockitoBeanSettings annotation = AnnotationUtils.findAnnotation(testInstance.getClass(),
-					MockitoBeanSettings.class);
-			testContext.setAttribute(MOCKS_ATTRIBUTE_NAME, initMockitoSession(testInstance,
-					annotation != null ? annotation.value() : Strictness.STRICT_STUBS));
+			MockitoBeanSettings annotation = AnnotationUtils.findAnnotation(testClass, MockitoBeanSettings.class);
+			Strictness strictness = (annotation != null ? annotation.value() : Strictness.STRICT_STUBS);
+			testContext.setAttribute(MOCKS_ATTRIBUTE_NAME, initMockitoSession(testInstance, strictness));
 		}
 	}
 
@@ -124,51 +127,42 @@ public class MockitoTestExecutionListener extends AbstractTestExecutionListener 
 		}
 	}
 
-	private boolean hasMockitoAnnotations(TestContext testContext) {
-		MockitoAnnotationCollector collector = new MockitoAnnotationCollector();
-		collector.collect(testContext.getTestClass());
-		return collector.hasAnnotations();
-	}
-
 
 	/**
-	 * Utility class that collects {@code org.mockito} annotations and the
-	 * annotations in this package (like {@link MockitoBeanSettings}).
+	 * Utility class that detects {@code org.mockito} annotations as well as the
+	 * annotations in this package (like {@link MockitoBeanSettings @MockitoBeanSettings}).
 	 */
-	private static final class MockitoAnnotationCollector implements FieldCallback {
+	private static class MockitoAnnotationDetector {
 
-		private static final String MOCKITO_BEAN_PACKAGE = MockitoBean.class.getPackageName();
+		private static final String MOCKITO_BEAN_PACKAGE = MockitoBeanSettings.class.getPackageName();
 
 		private static final String ORG_MOCKITO_PACKAGE = "org.mockito";
 
-		private final Set<Annotation> annotations = new LinkedHashSet<>();
+		private static final Predicate<Annotation> isMockitoAnnotation = annotation -> {
+				String packageName = annotation.annotationType().getPackageName();
+				return (packageName.startsWith(MOCKITO_BEAN_PACKAGE) ||
+						packageName.startsWith(ORG_MOCKITO_PACKAGE));
+			};
 
-		public void collect(Class<?> clazz) {
-			ReflectionUtils.doWithFields(clazz, this);
-			for (Annotation annotation : clazz.getAnnotations()) {
-				collect(annotation);
+		static boolean hasMockitoAnnotations(Class<?> testClass) {
+			if (isAnnotated(testClass)) {
+				return true;
 			}
+			// TODO Ideally we should short-circuit the search once we've found a Mockito annotation,
+			// since there's no need to continue searching additional fields or further up the class
+			// hierarchy; however, that is not possible with ReflectionUtils#doWithFields. Plus, the
+			// previous invocation of isAnnotated(testClass) only finds annotations declared directly
+			// on the test class. So, we'll likely need a completely different approach that combines
+			// the "test class/interface is annotated?" and "field is annotated?" checks in a single
+			// search algorithm.
+			AtomicBoolean found = new AtomicBoolean();
+			ReflectionUtils.doWithFields(testClass, field -> found.set(true), MockitoAnnotationDetector::isAnnotated);
+			return found.get();
 		}
 
-		@Override
-		public void doWith(Field field) throws IllegalArgumentException {
-			for (Annotation annotation : field.getAnnotations()) {
-				collect(annotation);
-			}
+		private static boolean isAnnotated(AnnotatedElement annotatedElement) {
+			return Arrays.stream(annotatedElement.getAnnotations()).anyMatch(isMockitoAnnotation);
 		}
-
-		private void collect(Annotation annotation) {
-			String packageName = annotation.annotationType().getPackageName();
-			if (packageName.startsWith(MOCKITO_BEAN_PACKAGE) ||
-					packageName.startsWith(ORG_MOCKITO_PACKAGE)) {
-				this.annotations.add(annotation);
-			}
-		}
-
-		boolean hasAnnotations() {
-			return !this.annotations.isEmpty();
-		}
-
 	}
 
 }

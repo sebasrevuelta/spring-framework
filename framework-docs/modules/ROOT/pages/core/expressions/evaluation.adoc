@@ -12,7 +12,7 @@ expression, `Hello World`.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	ExpressionParser parser = new SpelExpressionParser();
 	Expression exp = parser.parseExpression("'Hello World'"); // <1>
@@ -22,7 +22,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val parser = SpelExpressionParser()
 	val exp = parser.parseExpression("'Hello World'") // <1>
@@ -51,7 +51,7 @@ literal, `Hello World`.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	ExpressionParser parser = new SpelExpressionParser();
 	Expression exp = parser.parseExpression("'Hello World'.concat('!')"); // <1>
@@ -61,7 +61,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val parser = SpelExpressionParser()
 	val exp = parser.parseExpression("'Hello World'.concat('!')") // <1>
@@ -77,7 +77,7 @@ string literal, `Hello World`.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	ExpressionParser parser = new SpelExpressionParser();
 
@@ -89,7 +89,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val parser = SpelExpressionParser()
 
@@ -110,7 +110,7 @@ The following example shows how to use dot notation to get the length of a strin
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	ExpressionParser parser = new SpelExpressionParser();
 
@@ -122,7 +122,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val parser = SpelExpressionParser()
 
@@ -140,7 +140,7 @@ example shows.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	ExpressionParser parser = new SpelExpressionParser();
 	Expression exp = parser.parseExpression("new String('hello world').toUpperCase()"); // <1>
@@ -150,7 +150,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val parser = SpelExpressionParser()
 	val exp = parser.parseExpression("new String('hello world').toUpperCase()")  // <1>
@@ -173,7 +173,7 @@ reference the `name` property in a boolean expression.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	// Create and set a calendar
 	GregorianCalendar c = new GregorianCalendar();
@@ -195,7 +195,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	// Create and set a calendar
 	val c = GregorianCalendar()
@@ -222,29 +222,38 @@ Kotlin::
 [[expressions-evaluation-context]]
 == Understanding `EvaluationContext`
 
-The `EvaluationContext` interface is used when evaluating an expression to resolve
-properties, methods, or fields and to help perform type conversion. Spring provides two
+The `EvaluationContext` API is used when evaluating an expression to resolve properties,
+methods, or fields and to help perform type conversion. Spring provides two
 implementations.
 
-* `SimpleEvaluationContext`: Exposes a subset of essential SpEL language features and
-configuration options, for categories of expressions that do not require the full extent
-of the SpEL language syntax and should be meaningfully restricted. Examples include but
-are not limited to data binding expressions and property-based filters.
+`SimpleEvaluationContext`::
+  Exposes a subset of essential SpEL language features and configuration options, for
+  categories of expressions that do not require the full extent of the SpEL language
+  syntax and should be meaningfully restricted. Examples include but are not limited to
+  data binding expressions and property-based filters.
 
-* `StandardEvaluationContext`: Exposes the full set of SpEL language features and
-configuration options. You can use it to specify a default root object and to configure
-every available evaluation-related strategy.
+`StandardEvaluationContext`::
+  Exposes the full set of SpEL language features and configuration options. You can use
+  it to specify a default root object and to configure every available evaluation-related
+  strategy.
 
-`SimpleEvaluationContext` is designed to support only a subset of the SpEL language syntax.
-It excludes Java type references, constructors, and bean references. It also requires
-you to explicitly choose the level of support for properties and methods in expressions.
-By default, the `create()` static factory method enables only read access to properties.
-You can also obtain a builder to configure the exact level of support needed, targeting
-one or some combination of the following.
+`SimpleEvaluationContext` is designed to support only a subset of the SpEL language
+syntax. For example, it excludes Java type references, constructors, and bean references.
+It also requires you to explicitly choose the level of support for properties and methods
+in expressions. When creating a `SimpleEvaluationContext` you need to choose the level of
+support that you need for data binding in SpEL expressions:
 
-* Custom `PropertyAccessor` only (no reflection)
-* Data binding properties for read-only access
-* Data binding properties for read and write
+* Data binding for read-only access
+* Data binding for read and write access
+* A custom `PropertyAccessor` (typically not reflection-based), potentially combined with
+  a `DataBindingPropertyAccessor`
+
+Conveniently, `SimpleEvaluationContext.forReadOnlyDataBinding()` enables read-only access
+to properties via `DataBindingPropertyAccessor`. Similarly,
+`SimpleEvaluationContext.forReadWriteDataBinding()` enables read and write access to
+properties. Alternatively, configure custom accessors via
+`SimpleEvaluationContext.forPropertyAccessors(...)`, potentially disable assignment, and
+optionally activate method resolution and/or a type converter through the builder.
 
 
 [[expressions-type-conversion]]
@@ -266,7 +275,7 @@ being placed in it. The following example shows how to do so.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class Simple {
 		public List<Boolean> booleanList = new ArrayList<>();
@@ -287,7 +296,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	class Simple {
 		var booleanList: MutableList<Boolean> = ArrayList()
@@ -314,23 +323,23 @@ Kotlin::
 It is possible to configure the SpEL expression parser by using a parser configuration
 object (`org.springframework.expression.spel.SpelParserConfiguration`). The configuration
 object controls the behavior of some of the expression components. For example, if you
-index into an array or collection and the element at the specified index is `null`, SpEL
-can automatically create the element. This is useful when using expressions made up of a
-chain of property references. If you index into an array or list and specify an index
-that is beyond the end of the current size of the array or list, SpEL can automatically
-grow the array or list to accommodate that index. In order to add an element at the
+index into a collection and the element at the specified index is `null`, SpEL can
+automatically create the element. This is useful when using expressions made up of a
+chain of property references. Similarly, if you index into a collection and specify an
+index that is greater than the current size of the collection, SpEL can automatically
+grow the collection to accommodate that index. In order to add an element at the
 specified index, SpEL will try to create the element using the element type's default
 constructor before setting the specified value. If the element type does not have a
-default constructor, `null` will be added to the array or list. If there is no built-in
-or custom converter that knows how to set the value, `null` will remain in the array or
-list at the specified index. The following example demonstrates how to automatically grow
-the list.
+default constructor, `null` will be added to the collection. If there is no built-in
+converter or custom converter that knows how to set the value, `null` will remain in the
+collection at the specified index. The following example demonstrates how to
+automatically grow a `List`.
 
 [tabs]
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class Demo {
 		public List<String> list;
@@ -355,7 +364,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	class Demo {
 		var list: List<String>? = null
@@ -461,7 +470,7 @@ following example shows how to do so.
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	SpelParserConfiguration config = new SpelParserConfiguration(SpelCompilerMode.IMMEDIATE,
 			this.getClass().getClassLoader());
@@ -477,7 +486,7 @@ Java::
 
 Kotlin::
 +
-[source,kotlin,indent=0,subs="verbatim,quotes",role="secondary"]
+[source,kotlin,indent=0,subs="verbatim,quotes"]
 ----
 	val config = SpelParserConfiguration(SpelCompilerMode.IMMEDIATE,
 			this.javaClass.classLoader)

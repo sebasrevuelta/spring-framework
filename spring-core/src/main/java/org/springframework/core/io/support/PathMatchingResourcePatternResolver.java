@@ -34,6 +34,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -90,7 +91,7 @@ import org.springframework.util.StringUtils;
  * Examples are real URLs such as "{@code file:C:/context.xml}", pseudo-URLs
  * such as "{@code classpath:/context.xml}", and simple unprefixed paths
  * such as "{@code /WEB-INF/context.xml}". The latter will resolve in a
- * fashion specific to the underlying {@code ResourceLoader} (e.g.
+ * fashion specific to the underlying {@code ResourceLoader} (for example,
  * {@code ServletContextResource} for a {@code WebApplicationContext}).
  *
  * <h3>Ant-style Patterns</h3>
@@ -104,7 +105,7 @@ import org.springframework.util.StringUtils;
  * the resolver follows a more complex but defined procedure to try to resolve
  * the wildcard. It produces a {@code Resource} for the path up to the last
  * non-wildcard segment and obtains a {@code URL} from it. If this URL is not a
- * "{@code jar:}" URL or container-specific variant (e.g. "{@code zip:}" in WebLogic,
+ * "{@code jar:}" URL or container-specific variant (for example, "{@code zip:}" in WebLogic,
  * "{@code wsjar}" in WebSphere", etc.), then the root directory of the filesystem
  * associated with the URL is obtained and used to resolve the wildcards by walking
  * the filesystem. In the case of a jar URL, the resolver either gets a
@@ -234,7 +235,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
 	static {
 		try {
-			// Detect Equinox OSGi (e.g. on WebSphere 6.1)
+			// Detect Equinox OSGi (for example, on WebSphere 6.1)
 			Class<?> fileLocatorClass = ClassUtils.forName("org.eclipse.core.runtime.FileLocator",
 					PathMatchingResourcePatternResolver.class.getClassLoader());
 			equinoxResolveMethod = fileLocatorClass.getMethod("resolve", URL.class);
@@ -428,6 +429,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see #doFindAllClassPathResources
 	 * @see #doFindPathMatchingFileResources
 	 */
+	@SuppressWarnings("deprecation")  // on JDK 20 (deprecated URL constructor)
 	protected Resource convertClassLoaderURL(URL url) {
 		if (ResourceUtils.URL_PROTOCOL_FILE.equals(url.getProtocol())) {
 			try {
@@ -445,14 +447,10 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			if (!cleanedPath.equals(urlString)) {
 				// Prefer cleaned URL, aligned with UrlResource#createRelative(String)
 				try {
-					// Cannot test for URLStreamHandler directly: URL equality for same String
-					// in order to find out whether original URL uses default URLStreamHandler.
-					if (ResourceUtils.toURL(urlString).equals(url)) {
-						// Plain URL with default URLStreamHandler -> replace with cleaned path.
-						return new UrlResource(ResourceUtils.toURI(cleanedPath));
-					}
+					// Retain original URL instance, potentially including custom URLStreamHandler.
+					return new UrlResource(new URL(url, cleanedPath));
 				}
-				catch (URISyntaxException | MalformedURLException ex) {
+				catch (MalformedURLException ex) {
 					// Fallback to regular URL construction below...
 				}
 			}
@@ -979,7 +977,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 					.formatted(rootPath.toAbsolutePath(), subPattern));
 		}
 
-		try (Stream<Path> files = Files.walk(rootPath)) {
+		try (Stream<Path> files = Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)) {
 			files.filter(isMatchingFile).sorted().map(FileSystemResource::new).forEach(result::add);
 		}
 		catch (Exception ex) {

@@ -11,6 +11,10 @@ to override. If multiple candidates match, `@Qualifier` can be provided to narro
 candidate to override. Alternatively, a candidate whose bean definition name matches the
 name of the field will match.
 
+When using `@MockitoBean`, if you would like for a new bean definition to be created when
+a corresponding bean definition does not exist, set the `enforceOverride` attribute to
+`false` – for example, `@MockitoBean(enforceOverride = false)`.
+
 To use a by-name override rather than a by-type override, specify the `name` attribute
 of the annotation.
 
@@ -36,13 +40,16 @@ xref:testing/testcontext-framework/bean-overriding.adoc#testcontext-bean-overrid
 and the original instance is wrapped in a Mockito spy. This strategy requires that
 exactly one candidate bean definition exists.
 
+NOTE: Only _singleton_ beans can be overridden. Any attempt to override a non-singleton
+bean will result in an exception.
+
 The following example shows how to use the default behavior of the `@MockitoBean` annotation:
 
 [tabs]
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class OverrideBeanTests {
 		@MockitoBean // <1>
@@ -66,7 +73,7 @@ The following example uses a by-name lookup, rather than a by-type lookup:
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class OverrideBeanTests {
 		@MockitoBean(name = "service") // <1>
@@ -87,7 +94,7 @@ The following example shows how to use the default behavior of the `@MockitoSpyB
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class OverrideBeanTests {
 		@MockitoSpyBean // <1>
@@ -110,7 +117,7 @@ The following example uses a by-name lookup, rather than a by-type lookup:
 ======
 Java::
 +
-[source,java,indent=0,subs="verbatim,quotes",role="primary"]
+[source,java,indent=0,subs="verbatim,quotes"]
 ----
 	class OverrideBeanTests {
 		@MockitoSpyBean(name = "service") // <1>

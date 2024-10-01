@@ -42,9 +42,13 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * {@link org.springframework.beans.factory.config.ConfigurableListableBeanFactory#registerResolvableDependency(Class, Object)
  * registered directly}) will not be found.
  *
+ * <p><strong>NOTE</strong>: Only <em>singleton</em> beans can be overridden.
+ * Any attempt to override a non-singleton bean will result in an exception.
+ *
  * @author Simon Baslé
  * @since 6.2
- * @see MockitoBean
+ * @see org.springframework.test.context.bean.override.mockito.MockitoBean @MockitoBean
+ * @see org.springframework.test.context.bean.override.convention.TestBean @TestBean
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

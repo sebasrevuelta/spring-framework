@@ -48,10 +48,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @SpringJUnitConfig
 public class MockitoBeanForByTypeLookupIntegrationTests {
 
-	@MockitoBean
+	@MockitoBean(enforceOverride = false)
 	AnotherService serviceIsNotABean;
 
-	@MockitoBean
+	@MockitoBean(enforceOverride = false)
 	ExampleService anyNameForService;
 
 	@MockitoBean
@@ -123,13 +123,13 @@ public class MockitoBeanForByTypeLookupIntegrationTests {
 	}
 
 
-	interface AnotherService {
+	public interface AnotherService {
 
 		String hello();
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class Config {
 
 		@Bean("example")

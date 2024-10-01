@@ -73,6 +73,7 @@ import org.springframework.web.util.UriBuilderFactory;
  * </ul>
  *
  * @author Arjen Poutsma
+ * @author Sebastien Deleuze
  * @since 6.1
  */
 public interface RestClient {
@@ -389,7 +390,7 @@ public interface RestClient {
 		/**
 		 * Configure the {@link ClientHttpRequestFactory} to use. This is useful
 		 * for plugging in and/or customizing options of the underlying HTTP
-		 * client library (e.g. SSL).
+		 * client library (for example, SSL).
 		 * <p>If no request factory is specified, {@code RestClient} uses
 		 * {@linkplain org.springframework.http.client.HttpComponentsClientHttpRequestFactory Apache Http Client},
 		 * {@linkplain org.springframework.http.client.JettyClientHttpRequestFactory Jetty Http Client}
@@ -405,10 +406,21 @@ public interface RestClient {
 
 		/**
 		 * Configure the message converters for the {@code RestClient} to use.
-		 * @param configurer the configurer to apply
+		 * @param configurer the configurer to apply on the list of default
+		 * {@link HttpMessageConverter} pre-initialized
 		 * @return this builder
+		 * @see #messageConverters(List)
 		 */
 		Builder messageConverters(Consumer<List<HttpMessageConverter<?>>> configurer);
+
+		/**
+		 * Set the message converters for the {@code RestClient} to use.
+		 * @param messageConverters the list of {@link HttpMessageConverter} to use
+		 * @return this builder
+		 * @since 6.2
+		 * @see #messageConverters(Consumer)
+		 */
+		Builder messageConverters(List<HttpMessageConverter<?>> messageConverters);
 
 		/**
 		 * Configure the {@link io.micrometer.observation.ObservationRegistry} to use
@@ -458,21 +470,21 @@ public interface RestClient {
 		 * Specify the URI using a fully constructed {@link URI}.
 		 * <p>If the given URI is absolute, it is used as given. If it is
 		 * a relative URI, the {@link UriBuilderFactory} configured for
-		 * the client (e.g. with a base URI) will be used to
+		 * the client (for example, with a base URI) will be used to
 		 * {@linkplain URI#resolve(URI) resolve} the given URI against.
 		 */
 		S uri(URI uri);
 
 		/**
 		 * Specify the URI for the request using a URI template and URI variables.
-		 * <p>If a {@link UriBuilderFactory} was configured for the client (e.g.
+		 * <p>If a {@link UriBuilderFactory} was configured for the client (for example,
 		 * with a base URI) it will be used to expand the URI template.
 		 */
 		S uri(String uri, Object... uriVariables);
 
 		/**
 		 * Specify the URI for the request using a URI template and URI variables.
-		 * <p>If a {@link UriBuilderFactory} was configured for the client (e.g.
+		 * <p>If a {@link UriBuilderFactory} was configured for the client (for example,
 		 * with a base URI) it will be used to expand the URI template.
 		 */
 		S uri(String uri, Map<String, ?> uriVariables);
