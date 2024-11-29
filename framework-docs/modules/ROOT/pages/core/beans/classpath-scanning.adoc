@@ -480,11 +480,15 @@ factory method and other bean definition properties, such as a qualifier value t
 the `@Qualifier` annotation. Other method-level annotations that can be specified are
 `@Scope`, `@Lazy`, and custom qualifier annotations.
 
-TIP: In addition to its role for component initialization, you can also place the `@Lazy`
+[[beans-factorybeans-annotations-lazy-injection-points]]
+[TIP]
+====
+In addition to its role for component initialization, you can also place the `@Lazy`
 annotation on injection points marked with `@Autowired` or `@Inject`. In this context,
 it leads to the injection of a lazy-resolution proxy. However, such a proxy approach
 is rather limited. For sophisticated lazy interactions, in particular in combination
 with optional dependencies, we recommend `ObjectProvider<MyTargetBean>` instead.
+====
 
 Autowired fields and methods are supported, as previously discussed, with additional
 support for autowiring of `@Bean` methods. The following example shows how to do so:
@@ -920,7 +924,8 @@ Kotlin::
 [[beans-scanning-qualifiers]]
 == Providing Qualifier Metadata with Annotations
 
-The `@Qualifier` annotation is discussed in xref:core/beans/annotation-config/autowired-qualifiers.adoc[Fine-tuning Annotation-based Autowiring with Qualifiers].
+The `@Qualifier` annotation is discussed in
+xref:core/beans/annotation-config/autowired-qualifiers.adoc[Fine-tuning Annotation-based Autowiring with Qualifiers].
 The examples in that section demonstrate the use of the `@Qualifier` annotation and
 custom qualifier annotations to provide fine-grained control when you resolve autowire
 candidates. Because those examples were based on XML bean definitions, the qualifier

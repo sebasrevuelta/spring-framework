@@ -27,9 +27,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.log.LogFormatUtils;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.support.ServletContextResource;
+import org.springframework.web.util.UriUtils;
 
 /**
  * Resource handling utility methods to share common logic between
@@ -42,6 +45,49 @@ public abstract class ResourceHandlerUtils {
 
 	private static final Log logger = LogFactory.getLog(ResourceHandlerUtils.class);
 
+	private static final String FOLDER_SEPARATOR = "/";
+
+	private static final String WINDOWS_FOLDER_SEPARATOR = "\\";
+
+
+	/**
+	 * Assert the given location is not null, and its path ends on slash.
+	 */
+	public static void assertResourceLocation(@Nullable Resource location) {
+		Assert.notNull(location, "Resource location must not be null");
+		try {
+			String path;
+			if (location instanceof UrlResource) {
+				path = location.getURL().toExternalForm();
+			}
+			else if (location instanceof ClassPathResource classPathResource) {
+				path = classPathResource.getPath();
+			}
+			else {
+				path = location.getURL().getPath();
+			}
+			Assert.isTrue(path.endsWith(FOLDER_SEPARATOR) || path.endsWith(WINDOWS_FOLDER_SEPARATOR),
+					"Resource location does not end with slash: " + path);
+		}
+		catch (IOException ex) {
+			// ignore
+		}
+	}
+
+	/**
+	 * Check if the given static resource location path ends with a trailing
+	 * slash, and append it if necessary.
+	 * @param path the location path
+	 * @return the resulting path to use
+	 */
+	public static String initLocationPath(String path) {
+		String separator = (path.contains(FOLDER_SEPARATOR) ? FOLDER_SEPARATOR : WINDOWS_FOLDER_SEPARATOR);
+		if (!path.endsWith(separator)) {
+			path = path.concat(separator);
+			logger.warn("Appended trailing slash to static resource location: " + path);
+		}
+		return path;
+	}
 
 	/**
 	 * Normalize the given resource path replacing the following:
@@ -140,7 +186,7 @@ public abstract class ResourceHandlerUtils {
 				return true;
 			}
 		}
-		if (path.contains("..") && StringUtils.cleanPath(path).contains("../")) {
+		if (path.contains("../")) {
 			if (logger.isWarnEnabled()) {
 				logger.warn(LogFormatUtils.formatValue(
 						"Path contains \"../\" after call to StringUtils#cleanPath: [" + path + "]", -1, true));
@@ -156,24 +202,29 @@ public abstract class ResourceHandlerUtils {
 	 * @return {@code true} if the path is invalid, {@code false} otherwise
 	 */
 	private static boolean isInvalidEncodedPath(String path) {
-		if (path.contains("%")) {
-			try {
-				// Use URLDecoder (vs UriUtils) to preserve potentially decoded UTF-8 chars
-				String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-				if (isInvalidPath(decodedPath)) {
-					return true;
-				}
-				decodedPath = normalizeInputPath(decodedPath);
-				if (isInvalidPath(decodedPath)) {
-					return true;
-				}
-			}
-			catch (IllegalArgumentException ex) {
-				// May not be possible to decode...
-			}
+		String decodedPath = decode(path);
+		if (decodedPath.contains("%")) {
+			decodedPath = decode(decodedPath);
 		}
-		return false;
+		if (!StringUtils.hasText(decodedPath)) {
+			return true;
+		}
+		if (isInvalidPath(decodedPath)) {
+			return true;
+		}
+		decodedPath = normalizeInputPath(decodedPath);
+		return isInvalidPath(decodedPath);
 	}
+
+	private static String decode(String path) {
+		try {
+			return UriUtils.decode(path, StandardCharsets.UTF_8);
+		}
+		catch (Exception ex) {
+			return "";
+		}
+	}
+
 
 	/**
 	 * Check whether the resource is under the given location.

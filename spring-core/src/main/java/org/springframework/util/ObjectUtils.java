@@ -138,6 +138,7 @@ public abstract class ObjectUtils {
 	 * @see CollectionUtils#isEmpty(java.util.Collection)
 	 * @see CollectionUtils#isEmpty(java.util.Map)
 	 */
+	@Contract("null -> true")
 	public static boolean isEmpty(@Nullable Object obj) {
 		if (obj == null) {
 			return true;
@@ -702,8 +703,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);
@@ -726,8 +726,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);
@@ -750,8 +749,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);
@@ -774,8 +772,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);
@@ -798,8 +795,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);
@@ -846,8 +842,7 @@ public abstract class ObjectUtils {
 		if (array == null) {
 			return NULL_STRING;
 		}
-		int length = array.length;
-		if (length == 0) {
+		if (array.length == 0) {
 			return EMPTY_ARRAY;
 		}
 		StringJoiner stringJoiner = new StringJoiner(ARRAY_ELEMENT_SEPARATOR, ARRAY_START, ARRAY_END);

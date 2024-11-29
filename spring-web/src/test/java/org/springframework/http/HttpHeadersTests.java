@@ -70,6 +70,14 @@ class HttpHeadersTests {
 	}
 
 	@Test
+	void writableHttpHeadersUnwrapsMultiple() {
+		HttpHeaders originalExchangeHeaders = HttpHeaders.readOnlyHttpHeaders(new HttpHeaders());
+		HttpHeaders firewallHeaders = new HttpHeaders(originalExchangeHeaders);
+		HttpHeaders writeable = new HttpHeaders(firewallHeaders);
+		writeable.setContentType(MediaType.APPLICATION_JSON);
+	}
+
+	@Test
 	void getOrEmpty() {
 		String key = "FOO";
 
@@ -211,6 +219,15 @@ class HttpHeadersTests {
 		headers.setHost(host);
 		assertThat(headers.getHost()).as("Invalid Host header").isEqualTo(host);
 		assertThat(headers.getFirst("Host")).as("Invalid Host header").isEqualTo("[::1]");
+	}
+
+	@Test // gh-33716
+	void hostDeletion() {
+		InetSocketAddress host = InetSocketAddress.createUnresolved("localhost", 8080);
+		headers.setHost(host);
+		headers.setHost(null);
+		assertThat(headers.getHost()).as("Host is not deleted").isEqualTo(null);
+		assertThat(headers.getFirst("Host")).as("Host is not deleted").isEqualTo(null);
 	}
 
 	@Test

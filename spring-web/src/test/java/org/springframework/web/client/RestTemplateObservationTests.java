@@ -214,8 +214,7 @@ class RestTemplateObservationTests {
 
 
 	private TestObservationRegistryAssert.TestObservationRegistryAssertReturningObservationContextAssert assertThatHttpObservation() {
-		return TestObservationRegistryAssert.assertThat(this.observationRegistry)
-				.hasObservationWithNameEqualTo("http.client.requests").that();
+		return assertThat(this.observationRegistry).hasObservationWithNameEqualTo("http.client.requests").that();
 	}
 
 	static class ContextAssertionObservationHandler implements ObservationHandler<ClientRequestObservationContext> {
@@ -243,12 +242,12 @@ class RestTemplateObservationTests {
 		}
 
 		@Override
-		public boolean hasError(ClientHttpResponse response) throws IOException {
+		public boolean hasError(ClientHttpResponse response) {
 			return true;
 		}
 
 		@Override
-		public void handleError(ClientHttpResponse response) throws IOException {
+		public void handleError(URI uri, HttpMethod httpMethod, ClientHttpResponse response) {
 			currentObservation = this.observationRegistry.getCurrentObservation();
 		}
 	}

@@ -37,6 +37,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.InterceptingClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.client.JettyClientHttpRequestFactory;
+import org.springframework.http.client.ReactorClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.client.observation.ClientRequestObservationConvention;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -55,6 +56,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilderFactory;
 import org.springframework.web.util.UriTemplateHandler;
@@ -74,6 +77,8 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 	private static final boolean httpComponentsClientPresent;
 
 	private static final boolean jettyClientPresent;
+
+	private static final boolean reactorNettyClientPresent;
 
 	private static final boolean jdkClientPresent;
 
@@ -99,6 +104,7 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 
 		httpComponentsClientPresent = ClassUtils.isPresent("org.apache.hc.client5.http.classic.HttpClient", loader);
 		jettyClientPresent = ClassUtils.isPresent("org.eclipse.jetty.client.HttpClient", loader);
+		reactorNettyClientPresent = ClassUtils.isPresent("reactor.netty.http.client.HttpClient", loader);
 		jdkClientPresent = ClassUtils.isPresent("java.net.http.HttpClient", loader);
 
 		jackson2Present = ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper", loader) &&
@@ -122,6 +128,9 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 
 	@Nullable
 	private HttpHeaders defaultHeaders;
+
+	@Nullable
+	private MultiValueMap<String, String> defaultCookies;
 
 	@Nullable
 	private Consumer<RestClient.RequestHeadersSpec<?>> defaultRequest;
@@ -165,6 +174,8 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 		else {
 			this.defaultHeaders = null;
 		}
+		this.defaultCookies = (other.defaultCookies != null ?
+				new LinkedMultiValueMap<>(other.defaultCookies) : null);
 		this.defaultRequest = other.defaultRequest;
 		this.statusHandlers = (other.statusHandlers != null ? new ArrayList<>(other.statusHandlers) : null);
 
@@ -283,6 +294,25 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 			this.defaultHeaders = new HttpHeaders();
 		}
 		return this.defaultHeaders;
+	}
+
+	@Override
+	public RestClient.Builder defaultCookie(String cookie, String... values) {
+		initCookies().addAll(cookie, Arrays.asList(values));
+		return this;
+	}
+
+	@Override
+	public RestClient.Builder defaultCookies(Consumer<MultiValueMap<String, String>> cookiesConsumer) {
+		cookiesConsumer.accept(initCookies());
+		return this;
+	}
+
+	private MultiValueMap<String, String> initCookies() {
+		if (this.defaultCookies == null) {
+			this.defaultCookies = new LinkedMultiValueMap<>(3);
+		}
+		return this.defaultCookies;
 	}
 
 	@Override
@@ -438,19 +468,21 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 	public RestClient build() {
 		ClientHttpRequestFactory requestFactory = initRequestFactory();
 		UriBuilderFactory uriBuilderFactory = initUriBuilderFactory();
+
 		HttpHeaders defaultHeaders = copyDefaultHeaders();
-		List<HttpMessageConverter<?>> messageConverters = (this.messageConverters != null ?
-				this.messageConverters : initMessageConverters());
-		return new DefaultRestClient(requestFactory,
-				this.interceptors, this.initializers, uriBuilderFactory,
-				defaultHeaders,
+		MultiValueMap<String, String> defaultCookies = copyDefaultCookies();
+
+		List<HttpMessageConverter<?>> converters =
+				(this.messageConverters != null ? this.messageConverters : initMessageConverters());
+
+		return new DefaultRestClient(
+				requestFactory, this.interceptors, this.initializers,
+				uriBuilderFactory, defaultHeaders, defaultCookies,
 				this.defaultRequest,
 				this.statusHandlers,
-				messageConverters,
-				this.observationRegistry,
-				this.observationConvention,
-				new DefaultRestClientBuilder(this)
-				);
+				converters,
+				this.observationRegistry, this.observationConvention,
+				new DefaultRestClientBuilder(this));
 	}
 
 	private ClientHttpRequestFactory initRequestFactory() {
@@ -462,6 +494,9 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 		}
 		else if (jettyClientPresent) {
 			return new JettyClientHttpRequestFactory();
+		}
+		else if (reactorNettyClientPresent) {
+			return new ReactorClientHttpRequestFactory();
 		}
 		else if (jdkClientPresent) {
 			// java.net.http module might not be loaded, so we can't default to the JDK HttpClient
@@ -484,14 +519,22 @@ final class DefaultRestClientBuilder implements RestClient.Builder {
 
 	@Nullable
 	private HttpHeaders copyDefaultHeaders() {
-		if (this.defaultHeaders != null) {
-			HttpHeaders copy = new HttpHeaders();
-			this.defaultHeaders.forEach((key, values) -> copy.put(key, new ArrayList<>(values)));
-			return HttpHeaders.readOnlyHttpHeaders(copy);
-		}
-		else {
+		if (this.defaultHeaders == null) {
 			return null;
 		}
+		HttpHeaders copy = new HttpHeaders();
+		this.defaultHeaders.forEach((key, values) -> copy.put(key, new ArrayList<>(values)));
+		return HttpHeaders.readOnlyHttpHeaders(copy);
+	}
+
+	@Nullable
+	private MultiValueMap<String, String> copyDefaultCookies() {
+		if (this.defaultCookies == null) {
+			return null;
+		}
+		MultiValueMap<String, String> copy = new LinkedMultiValueMap<>(this.defaultCookies.size());
+		this.defaultCookies.forEach((key, values) -> copy.put(key, new ArrayList<>(values)));
+		return CollectionUtils.unmodifiableMultiValueMap(copy);
 	}
 
 }

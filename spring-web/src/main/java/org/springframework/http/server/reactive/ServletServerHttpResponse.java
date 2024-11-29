@@ -17,7 +17,7 @@
 package org.springframework.http.server.reactive;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import jakarta.servlet.AsyncContext;
@@ -39,18 +39,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Adapt {@link ServerHttpResponse} to the Servlet {@link HttpServletResponse}.
  *
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
+ * @author Brian Clozel
  * @since 5.0
  */
 class ServletServerHttpResponse extends AbstractListenerServerHttpResponse {
-
-	private static final boolean IS_SERVLET61 = ReflectionUtils.findField(HttpServletResponse.class, "SC_PERMANENT_REDIRECT") != null;
 
 	private final HttpServletResponse response;
 
@@ -186,12 +184,7 @@ class ServletServerHttpResponse extends AbstractListenerServerHttpResponse {
 				cookie.setSecure(httpCookie.isSecure());
 				cookie.setHttpOnly(httpCookie.isHttpOnly());
 				if (httpCookie.isPartitioned()) {
-					if (IS_SERVLET61) {
-						cookie.setAttribute("Partitioned", "");
-					}
-					else {
-						cookie.setAttribute("Partitioned", "true");
-					}
+					cookie.setAttribute("Partitioned", "");
 				}
 				this.response.addCookie(cookie);
 			}
@@ -230,15 +223,15 @@ class ServletServerHttpResponse extends AbstractListenerServerHttpResponse {
 	 */
 	protected int writeToOutputStream(DataBuffer dataBuffer) throws IOException {
 		ServletOutputStream outputStream = this.outputStream;
-		InputStream input = dataBuffer.asInputStream();
-		int bytesWritten = 0;
-		byte[] buffer = new byte[this.bufferSize];
-		int bytesRead;
-		while (outputStream.isReady() && (bytesRead = input.read(buffer)) != -1) {
-			outputStream.write(buffer, 0, bytesRead);
-			bytesWritten += bytesRead;
+		int len = 0;
+		try (DataBuffer.ByteBufferIterator iterator = dataBuffer.readableByteBuffers()) {
+			while (iterator.hasNext() && outputStream.isReady()) {
+				ByteBuffer byteBuffer = iterator.next();
+				len += byteBuffer.remaining();
+				outputStream.write(byteBuffer);
+			}
 		}
-		return bytesWritten;
+		return len;
 	}
 
 	private void flush() throws IOException {

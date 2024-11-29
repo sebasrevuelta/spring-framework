@@ -44,7 +44,6 @@ import org.springframework.scheduling.support.DelegatingErrorHandlingRunnable;
 import org.springframework.scheduling.support.TaskUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
-import org.springframework.util.concurrent.ListenableFuture;
 
 /**
  * A simple implementation of Spring's {@link TaskScheduler} interface, using
@@ -80,7 +79,9 @@ import org.springframework.util.concurrent.ListenableFuture;
  * but rather just the hand-off to an execution thread.</b> As a consequence,
  * a {@link ScheduledFuture} handle (for example, from {@link #schedule(Runnable, Instant)})
  * represents that hand-off rather than the actual completion of the provided task
- * (or series of repeated tasks).
+ * (or series of repeated tasks). Also, this scheduler participates in lifecycle
+ * management to a limited degree only, stopping trigger firing and fixed-delay
+ * task execution but not stopping the execution of handed-off tasks.
  *
  * <p>As an alternative to the built-in thread-per-task capability, this scheduler
  * can also be configured with a separate target executor for scheduled task
@@ -268,15 +269,15 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 		return super.submit(new DelegatingErrorHandlingCallable<>(task, this.errorHandler));
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({"deprecation", "removal"})
 	@Override
-	public ListenableFuture<?> submitListenable(Runnable task) {
+	public org.springframework.util.concurrent.ListenableFuture<?> submitListenable(Runnable task) {
 		return super.submitListenable(TaskUtils.decorateTaskWithErrorHandler(task, this.errorHandler, false));
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({"deprecation", "removal"})
 	@Override
-	public <T> ListenableFuture<T> submitListenable(Callable<T> task) {
+	public <T> org.springframework.util.concurrent.ListenableFuture<T> submitListenable(Callable<T> task) {
 		return super.submitListenable(new DelegatingErrorHandlingCallable<>(task, this.errorHandler));
 	}
 

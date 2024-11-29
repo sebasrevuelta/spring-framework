@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ import org.springframework.util.ErrorHandler;
  * (i.e. after your business logic executed but before the JMS part got committed),
  * so duplicate message detection is just there to cover a corner case.
  * <li>Or wrap your <i>entire processing with an XA transaction</i>, covering the
- * reception of the JMS message as well as the execution of the business logic in
+ * receipt of the JMS message as well as the execution of the business logic in
  * your message listener (including database operations etc). This is only
  * supported by {@link DefaultMessageListenerContainer}, through specifying
  * an external "transactionManager" (typically a
@@ -676,16 +676,21 @@ public abstract class AbstractMessageListenerContainer extends AbstractJmsListen
 	 * @see #handleListenerException
 	 */
 	protected void executeListener(Session session, Message message) {
-		createObservation(message).observe(() -> {
-			try {
-				doExecuteListener(session, message);
-			}
-			catch (Throwable ex) {
-				handleListenerException(ex);
-			}
-		});
+		try {
+			doExecuteListener(session, message);
+		}
+		catch (Throwable ex) {
+			handleListenerException(ex);
+		}
 	}
 
+	/**
+	 * Create, but do not start an {@link Observation} for JMS message processing.
+	 * <p>This will return a "no-op" observation if Micrometer Jakarta instrumentation
+	 * is not available or if no Observation Registry has been configured.
+	 * @param message the message to be observed
+	 * @since 6.1
+	 */
 	protected Observation createObservation(Message message) {
 		if (micrometerJakartaPresent && this.observationRegistry != null) {
 			return ObservationFactory.create(this.observationRegistry, message);
@@ -770,7 +775,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractJmsListen
 
 		Connection conToClose = null;
 		Session sessionToClose = null;
-		Observation observation = createObservation(message);
 		try {
 			Session sessionToUse = session;
 			if (micrometerJakartaPresent && this.observationRegistry != null) {
@@ -782,7 +786,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractJmsListen
 				sessionToClose = createSession(conToClose);
 				sessionToUse = sessionToClose;
 			}
-			observation.start();
 			// Actually invoke the message listener...
 			listener.onMessage(message, sessionToUse);
 			// Clean up specially exposed Session, if any.
@@ -794,11 +797,9 @@ public abstract class AbstractMessageListenerContainer extends AbstractJmsListen
 			}
 		}
 		catch (JMSException exc) {
-			observation.error(exc);
 			throw exc;
 		}
 		finally {
-			observation.stop();
 			JmsUtils.closeSession(sessionToClose);
 			JmsUtils.closeConnection(conToClose);
 		}

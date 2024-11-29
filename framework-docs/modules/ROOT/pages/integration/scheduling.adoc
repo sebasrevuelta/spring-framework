@@ -633,7 +633,7 @@ scheduled with a trigger.
 
 
 [[scheduling-task-namespace-scheduler]]
-=== The 'scheduler' Element
+=== The `scheduler` Element
 
 The following element creates a `ThreadPoolTaskScheduler` instance with the
 specified thread pool size:
@@ -691,7 +691,7 @@ reached, does the executor create a new thread beyond the core size. If the max 
 has also been reached, then the executor rejects the task.
 
 By default, the queue is unbounded, but this is rarely the desired configuration,
-because it can lead to `OutOfMemoryErrors` if enough tasks are added to that queue while
+because it can lead to `OutOfMemoryError` if enough tasks are added to that queue while
 all pool threads are busy. Furthermore, if the queue is unbounded, the max size has
 no effect at all. Since the executor always tries the queue before creating a new
 thread beyond the core size, a queue must have a finite capacity for the thread pool to
@@ -744,7 +744,7 @@ The following example sets the `keep-alive` value to two minutes:
 
 
 [[scheduling-task-namespace-scheduled-tasks]]
-=== The 'scheduled-tasks' Element
+=== The `scheduled-tasks` Element
 
 The most powerful feature of Spring's task namespace is the support for configuring
 tasks to be scheduled within a Spring Application Context. This follows an approach

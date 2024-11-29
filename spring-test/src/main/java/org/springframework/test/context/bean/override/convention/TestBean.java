@@ -22,25 +22,27 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.test.context.bean.override.BeanOverride;
 
 /**
- * {@code @TestBean} is an annotation that can be applied to a field in a test
- * class to override a bean in the test's
+ * {@code @TestBean} is an annotation that can be applied to a non-static field
+ * in a test class to override a bean in the test's
  * {@link org.springframework.context.ApplicationContext ApplicationContext}
  * using a static factory method.
  *
- * <p>By default, the bean to override is inferred from the type of the
- * annotated field. This requires that exactly one matching bean definition is
- * present in the application context. A {@code @Qualifier} annotation can be
+ * <p>By default, the bean to override is inferred from the type of the annotated
+ * field. If multiple candidates exist, a {@code @Qualifier} annotation can be
  * used to help disambiguate. In the absence of a {@code @Qualifier} annotation,
- * the name of the annotated field will be used as a qualifier. Alternatively,
- * you can explicitly specify a bean name to replace by setting the
- * {@link #value() value} or {@link #name() name} attribute. If you would like
- * for a new bean definition to be created when a corresponding bean definition
- * does not exist, set the {@link #enforceOverride() enforceOverride} attribute
- * to {@code false}.
+ * the name of the annotated field will be used as a fallback qualifier.
+ * Alternatively, you can explicitly specify a bean name to replace by setting the
+ * {@link #value() value} or {@link #name() name} attribute.
+ *
+ * <p>A bean will be created if a corresponding bean does not exist. However, if
+ * you would like for the test to fail when a corresponding bean does not exist,
+ * you can set the {@link #enforceOverride() enforceOverride} attribute to {@code true}
+ * &mdash; for example,  {@code @TestBean(enforceOverride = true)}.
  *
  * <p>The instance is created from a zero-argument static factory method in the
  * test class whose return type is compatible with the annotated field. In the
@@ -49,7 +51,8 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * interfaces, the entire type hierarchy is searched. Alternatively, a factory
  * method in an external class can be referenced via its fully-qualified method
  * name following the syntax {@code <fully-qualified class name>#<method name>}
- * &mdash; for example, {@code "org.example.TestUtils#createCustomerRepository"}.
+ * &mdash; for example,
+ * {@code @TestBean(methodName = "org.example.TestUtils#createCustomerRepository")}.
  *
  * <p>The factory method is deduced as follows.
  *
@@ -97,7 +100,15 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * }</code></pre>
  *
  * <p><strong>NOTE</strong>: Only <em>singleton</em> beans can be overridden.
- * Any attempt to override a non-singleton bean will result in an exception.
+ * Any attempt to override a non-singleton bean will result in an exception. When
+ * overriding a bean created by a {@link org.springframework.beans.factory.FactoryBean
+ * FactoryBean}, the {@code FactoryBean} will be replaced with a singleton bean
+ * corresponding to the value returned from the {@code @TestBean} factory method.
+ *
+ * <p>There are no restrictions on the visibility of {@code @TestBean} fields or
+ * factory methods. Such fields and methods can therefore be {@code public},
+ * {@code protected}, package-private (default visibility), or {@code private}
+ * depending on the needs or coding practices of the project.
  *
  * @author Simon Baslé
  * @author Stephane Nicoll
@@ -110,6 +121,7 @@ import org.springframework.test.context.bean.override.BeanOverride;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @BeanOverride(TestBeanOverrideProcessor.class)
+@Reflective(TestBeanReflectiveProcessor.class)
 public @interface TestBean {
 
 	/**
@@ -140,22 +152,21 @@ public @interface TestBean {
 	 * <p>Alternatively, a factory method in an external class can be referenced
 	 * via its fully-qualified method name following the syntax
 	 * {@code <fully-qualified class name>#<method name>} &mdash; for example,
-	 * {@code "org.example.TestUtils#createCustomerRepository"}.
+	 * {@code @TestBean(methodName = "org.example.TestUtils#createCustomerRepository")}.
 	 * <p>If left unspecified, the name of the factory method will be detected
 	 * based either on the name of the annotated field or the name of the bean.
 	 */
 	String methodName() default "";
 
 	/**
-	 * Whether to require the existence of a bean definition for the bean being
-	 * overridden.
-	 * <p>Defaults to {@code true} which means that an exception will be thrown
-	 * if a corresponding bean definition does not exist.
-	 * <p>Set to {@code false} to create a new bean definition when a corresponding
-	 * bean definition does not exist.
-	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE_DEFINITION
-	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE_OR_CREATE_DEFINITION
+	 * Whether to require the existence of the bean being overridden.
+	 * <p>Defaults to {@code false} which means that a bean will be created if a
+	 * corresponding bean does not exist.
+	 * <p>Set to {@code true} to cause an exception to be thrown if a corresponding
+	 * bean does not exist.
+	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE_OR_CREATE
+	 * @see org.springframework.test.context.bean.override.BeanOverrideStrategy#REPLACE
 	 */
-	boolean enforceOverride() default true;
+	boolean enforceOverride() default false;
 
 }

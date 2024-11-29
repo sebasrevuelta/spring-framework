@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringJUnitConfig
 public class TestBeanForByTypeLookupIntegrationTests {
 
-	@TestBean(enforceOverride = false)
+	@TestBean
 	MessageService messageService;
 
 	@TestBean
@@ -129,7 +129,7 @@ public class TestBeanForByTypeLookupIntegrationTests {
 	}
 
 	@FunctionalInterface
-	interface MessageService {
+	public interface MessageService {
 
 		String getMessage();
 	}

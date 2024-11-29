@@ -226,7 +226,7 @@ public class MockHttpServletResponse implements HttpServletResponse {
 				}
 				catch (Exception ignored) {
 					String value = this.contentType;
-					int charsetIndex = value.toLowerCase().indexOf(CHARSET_PREFIX);
+					int charsetIndex = value.toLowerCase(Locale.ROOT).indexOf(CHARSET_PREFIX);
 					if (charsetIndex != -1) {
 						value = value.substring(0, charsetIndex).trim();
 						if (value.endsWith(";")) {
@@ -246,7 +246,7 @@ public class MockHttpServletResponse implements HttpServletResponse {
 	private void updateContentTypePropertyAndHeader() {
 		if (this.contentType != null) {
 			String value = this.contentType;
-			if (this.characterEncodingSet && !value.toLowerCase().contains(CHARSET_PREFIX)) {
+			if (this.characterEncodingSet && !value.toLowerCase(Locale.ROOT).contains(CHARSET_PREFIX)) {
 				value += ';' + CHARSET_PREFIX + getCharacterEncoding();
 				this.contentType = value;
 			}
@@ -319,8 +319,10 @@ public class MockHttpServletResponse implements HttpServletResponse {
 
 	@Override
 	public void setContentLength(int contentLength) {
-		this.contentLength = contentLength;
-		doAddHeaderValue(HttpHeaders.CONTENT_LENGTH, contentLength, true);
+		if (!this.committed) {
+			this.contentLength = contentLength;
+			doAddHeaderValue(HttpHeaders.CONTENT_LENGTH, contentLength, true);
+		}
 	}
 
 	/**
@@ -334,8 +336,10 @@ public class MockHttpServletResponse implements HttpServletResponse {
 
 	@Override
 	public void setContentLengthLong(long contentLength) {
-		this.contentLength = contentLength;
-		doAddHeaderValue(HttpHeaders.CONTENT_LENGTH, contentLength, true);
+		if (!this.committed) {
+			this.contentLength = contentLength;
+			doAddHeaderValue(HttpHeaders.CONTENT_LENGTH, contentLength, true);
+		}
 	}
 
 	public long getContentLengthLong() {
@@ -358,7 +362,7 @@ public class MockHttpServletResponse implements HttpServletResponse {
 			}
 			catch (Exception ex) {
 				// Try to get charset value anyway
-				int charsetIndex = contentType.toLowerCase().indexOf(CHARSET_PREFIX);
+				int charsetIndex = contentType.toLowerCase(Locale.ROOT).indexOf(CHARSET_PREFIX);
 				if (charsetIndex != -1) {
 					setExplicitCharacterEncoding(contentType.substring(charsetIndex + CHARSET_PREFIX.length()));
 				}
